@@ -857,6 +857,7 @@ pub struct Line {
     id: i32,
     name: String,
     short_name: String,
+    long_name: String,
     text_color: Color,
     background_color: Color,
 }
@@ -869,6 +870,7 @@ impl Line {
             id,
             name,
             short_name: String::default(),
+            long_name: String::default(),
             text_color: Color::default(),
             background_color: Color::default(),
         }
@@ -878,6 +880,10 @@ impl Line {
 
     pub fn set_short_name(&mut self, value: String) {
         self.short_name = value;
+    }
+
+    pub fn set_long_name(&mut self, value: String) {
+        self.long_name = value;
     }
 
     pub fn set_text_color(&mut self, value: Color) {
