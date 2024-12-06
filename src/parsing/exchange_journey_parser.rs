@@ -1,11 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGZ
-use std::error::Error;
-
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{ExchangeTimeJourney, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
@@ -15,7 +14,7 @@ use crate::{
 pub fn parse(
     path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> Result<ResourceStorage<ExchangeTimeJourney>, Box<dyn Error>> {
+) -> Result<ResourceStorage<ExchangeTimeJourney>, Error> {
     log::info!("Parsing UMSTEIGZ...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -56,7 +55,7 @@ fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> Result<ExchangeTimeJourney, Box<dyn Error>> {
+) -> Result<ExchangeTimeJourney, Error> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id_1: i32 = values.remove(0).into();
     let administration_1: String = values.remove(0).into();
@@ -68,11 +67,11 @@ fn create_instance(
 
     let journey_id_1 = *journeys_pk_type_converter
         .get(&(journey_id_1, administration_1))
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     let journey_id_2 = *journeys_pk_type_converter
         .get(&(journey_id_2, administration_2))
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     let is_guaranteed = is_guaranteed == "!";
 

@@ -1,12 +1,11 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FPLAN
-use std::error::Error;
-
 use chrono::NaiveTime;
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
@@ -23,7 +22,7 @@ pub fn parse(
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<JourneyAndTypeConverter, Box<dyn Error>> {
+) -> Result<JourneyAndTypeConverter, Error> {
     log::info!("Parsing FPLAN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -116,7 +115,7 @@ pub fn parse(
                 &mut pk_type_converter,
             )),
             _ => {
-                let journey = data.last_mut().ok_or("Type A row missing.")?;
+                let journey = data.last_mut().ok_or_eyre("Type A row missing.")?;
 
                 match id {
                     ROW_B => {
@@ -162,14 +161,14 @@ fn set_transport_type(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
     let transport_type_id = *transport_types_pk_type_converter
         .get(&designation)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::TransportType,
@@ -212,14 +211,14 @@ fn add_attribute(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
 
     let attribute_id = *attributes_pk_type_converter
         .get(&designation)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::Attribute,
@@ -265,7 +264,7 @@ fn add_information_text(mut values: Vec<ParsedValue>, journey: &mut Journey) {
     );
 }
 
-fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), Box<dyn Error>> {
+fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), Error> {
     let line_designation: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
     let until_stop_id: Option<i32> = values.remove(0).into();
@@ -278,7 +277,7 @@ fn set_line(mut values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), B
     let line_designation_first_char = line_designation
         .chars()
         .next()
-        .ok_or("Missing designation")?;
+        .ok_or_eyre("Missing designation")?;
     let (resource_id, extra_field_1) = if line_designation_first_char == '#' {
         (Some(line_designation[1..].parse::<i32>()?), None)
     } else {
@@ -306,7 +305,7 @@ fn set_direction(
     mut values: Vec<ParsedValue>,
     journey: &mut Journey,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let direction_type: String = values.remove(0).into();
     let direction_id: String = values.remove(0).into();
     let from_stop_id: Option<i32> = values.remove(0).into();
@@ -322,7 +321,7 @@ fn set_direction(
     } else {
         let id = *directions_pk_type_converter
             .get(&direction_id)
-            .ok_or("Unknown legacy ID")?;
+            .ok_or_eyre("Unknown legacy ID")?;
         Some(id)
     };
 

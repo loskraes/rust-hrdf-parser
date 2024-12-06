@@ -1,16 +1,15 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGV
-use std::error::Error;
-
 use crate::{
+    error::Error,
     models::{ExchangeTimeAdministration, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, Error> {
     log::info!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![

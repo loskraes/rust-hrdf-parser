@@ -4,11 +4,12 @@
 // ---
 // Files not used by the parser:
 // BHFART
-use std::{error::Error, vec};
+use std::vec;
 
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{CoordinateSystem, Coordinates, Model, Stop, Version},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
@@ -19,7 +20,7 @@ use crate::{
 
 type StopStorageAndExchangeTimes = (ResourceStorage<Stop>, (i16, i16));
 
-pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes, Box<dyn Error>> {
+pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes, Error> {
     log::info!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -58,7 +59,7 @@ fn load_coordinates(
     path: &str,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the LV95/WGS84 coordinates.
@@ -92,10 +93,7 @@ fn load_coordinates(
     })
 }
 
-fn load_exchange_priorities(
-    path: &str,
-    data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+fn load_exchange_priorities(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -113,7 +111,7 @@ fn load_exchange_priorities(
     })
 }
 
-fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -131,10 +129,7 @@ fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
     })
 }
 
-fn load_exchange_times(
-    path: &str,
-    data: &mut FxHashMap<i32, Stop>,
-) -> Result<(i16, i16), Box<dyn Error>> {
+fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(i16, i16), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -153,13 +148,13 @@ fn load_exchange_times(
         if let Some(x) = set_exchange_time(values, data)? {
             default_exchange_time = x;
         }
-        Ok::<(), Box<dyn Error>>(())
+        Ok::<(), Error>(())
     })?;
 
     Ok(default_exchange_time)
 }
 
-fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Box<dyn Error>> {
+fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -204,7 +199,7 @@ fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), 
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Result<Stop, Box<dyn Error>> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Result<Stop, Error> {
     let id: i32 = values.remove(0).into();
     let designations: String = values.remove(0).into();
 
@@ -217,7 +212,7 @@ fn set_coordinates(
     mut values: Vec<ParsedValue>,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
     let mut xy2: f64 = values.remove(0).into();
@@ -229,7 +224,7 @@ fn set_coordinates(
         (xy1, xy2) = (xy2, xy1);
     }
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     let coordinate = Coordinates::new(coordinate_system, xy1, xy2);
 
     match coordinate_system {
@@ -243,11 +238,11 @@ fn set_coordinates(
 fn set_exchange_priority(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_priority: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     stop.set_exchange_priority(exchange_priority);
 
     Ok(())
@@ -256,11 +251,11 @@ fn set_exchange_priority(
 fn set_exchange_flag(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_flag: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     stop.set_exchange_flag(exchange_flag);
 
     Ok(())
@@ -269,7 +264,7 @@ fn set_exchange_flag(
 fn set_exchange_time(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<Option<(i16, i16)>, Box<dyn Error>> {
+) -> Result<Option<(i16, i16)>, Error> {
     let stop_id: i32 = values.remove(0).into();
     let exchange_time_inter_city: i16 = values.remove(0).into();
     let exchange_time_other: i16 = values.remove(0).into();
@@ -281,7 +276,7 @@ fn set_exchange_time(
         // It contains default exchange times to be used when a stop has no specific exchange time.
         Ok(exchange_time)
     } else {
-        let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+        let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
         stop.set_exchange_time(exchange_time);
         Ok(None)
     }
@@ -290,24 +285,21 @@ fn set_exchange_time(
 fn set_restrictions(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let restrictions: i16 = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     stop.set_restrictions(restrictions);
 
     Ok(())
 }
 
-fn set_sloid(
-    mut values: Vec<ParsedValue>,
-    data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+fn set_sloid(mut values: Vec<ParsedValue>, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     stop.set_sloid(sloid);
 
     Ok(())
@@ -316,11 +308,11 @@ fn set_sloid(
 fn add_boarding_area(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, Stop>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let sloid: String = values.remove(0).into();
 
-    let stop = data.get_mut(&stop_id).ok_or("Unknown ID")?;
+    let stop = data.get_mut(&stop_id).ok_or_eyre("Unknown ID")?;
     stop.add_boarding_area(sloid);
 
     Ok(())
@@ -332,16 +324,19 @@ fn add_boarding_area(
 
 type NameAndAlternatives = (String, Option<String>, Option<String>, Option<Vec<String>>);
 
-fn parse_designations(designations: String) -> Result<NameAndAlternatives, Box<dyn Error>> {
+fn parse_designations(designations: String) -> Result<NameAndAlternatives, Error> {
     let designations = designations
         .split('>')
         .filter(|&s| !s.is_empty())
-        .map(|s| -> Result<(i32, String), Box<dyn Error>> {
+        .map(|s| -> Result<(i32, String), Error> {
             let s = s.replace('$', "");
             let mut parts = s.split('<');
 
-            let v = parts.next().ok_or("Missing value part")?.to_string();
-            let k = parts.next().ok_or("Missing value part")?.parse::<i32>()?;
+            let v = parts.next().ok_or_eyre("Missing value part")?.to_string();
+            let k = parts
+                .next()
+                .ok_or_eyre("Missing value part")?
+                .parse::<i32>()?;
 
             Ok((k, v))
         })
@@ -350,11 +345,11 @@ fn parse_designations(designations: String) -> Result<NameAndAlternatives, Box<d
             |mut acc: std::collections::HashMap<i32, Vec<String>, _>, item| {
                 let (k, v) = item?;
                 acc.entry(k).or_default().push(v);
-                Ok::<_, Box<dyn Error>>(acc)
+                Ok::<_, Error>(acc)
             },
         )?;
 
-    let name = designations.get(&1).ok_or("Missing stop name")?[0].clone();
+    let name = designations.get(&1).ok_or_eyre("Missing stop name")?[0].clone();
     let long_name = designations.get(&2).map(|x| x[0].clone());
     let abbreviation = designations.get(&3).map(|x| x[0].clone());
     let synonyms = designations.get(&4).cloned();

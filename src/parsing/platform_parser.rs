@@ -3,11 +3,10 @@
 // GLEIS, GLEIS_LV95, GLEIS_WGS
 // ---
 // Note: this parser collects both the Platform and JourneyPlatform resources.
-use std::error::Error;
-
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{CoordinateSystem, Coordinates, JourneyPlatform, Model, Platform},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
@@ -20,7 +19,7 @@ use crate::{
 pub fn parse(
     path: &str,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
-) -> Result<(ResourceStorage<JourneyPlatform>, ResourceStorage<Platform>), Box<dyn Error>> {
+) -> Result<(ResourceStorage<JourneyPlatform>, ResourceStorage<Platform>), Error> {
     log::info!("Parsing GLEIS...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -103,7 +102,7 @@ fn load_coordinates_for_platforms(
     bytes_offset: u64,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -153,7 +152,7 @@ fn create_journey_platform(
     mut values: Vec<ParsedValue>,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
     platforms_pk_type_converter: &FxHashMap<(i32, i32), i32>,
-) -> Result<JourneyPlatform, Box<dyn Error>> {
+) -> Result<JourneyPlatform, Error> {
     let stop_id: i32 = values.remove(0).into();
     let journey_id: i32 = values.remove(0).into();
     let administration: String = values.remove(0).into();
@@ -163,11 +162,11 @@ fn create_journey_platform(
 
     let journey_id = *journeys_pk_type_converter
         .get(&(journey_id, administration))
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     let platform_id = *platforms_pk_type_converter
         .get(&(stop_id, index))
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
 
     let time = time.map(|x| create_time_from_value(x as u32));
 
@@ -183,7 +182,7 @@ fn create_platform(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
     platforms_pk_type_converter: &mut FxHashMap<(i32, i32), i32>,
-) -> Result<Platform, Box<dyn Error>> {
+) -> Result<Platform, Error> {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
     let platform_data: String = values.remove(0).into();
@@ -200,7 +199,7 @@ fn platform_set_sloid(
     coordinate_system: CoordinateSystem,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     // The SLOID is processed only when loading LV95 coordinates.
     if coordinate_system == CoordinateSystem::LV95 {
         let stop_id: i32 = values.remove(0).into();
@@ -209,9 +208,9 @@ fn platform_set_sloid(
 
         let id = pk_type_converter
             .get(&(stop_id, index))
-            .ok_or("Unknown legacy ID")?;
+            .ok_or_eyre("Unknown legacy ID")?;
 
-        data.get_mut(id).ok_or("Unknown ID")?.set_sloid(sloid);
+        data.get_mut(id).ok_or_eyre("Unknown ID")?.set_sloid(sloid);
     }
 
     Ok(())
@@ -222,7 +221,7 @@ fn platform_set_coordinates(
     coordinate_system: CoordinateSystem,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
     data: &mut FxHashMap<i32, Platform>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let stop_id: i32 = values.remove(0).into();
     let index: i32 = values.remove(0).into();
     let mut xy1: f64 = values.remove(0).into();
@@ -237,8 +236,8 @@ fn platform_set_coordinates(
 
     let id = &pk_type_converter
         .get(&(stop_id, index))
-        .ok_or("Unknown legacy ID")?;
-    let platform = data.get_mut(id).ok_or("Unknown ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
+    let platform = data.get_mut(id).ok_or_eyre("Unknown ID")?;
 
     match coordinate_system {
         CoordinateSystem::LV95 => platform.set_lv95_coordinates(coordinate),
@@ -252,9 +251,7 @@ fn platform_set_coordinates(
 // --- Helper Functions
 // ------------------------------------------------------------------------------------------------
 
-fn parse_platform_data(
-    mut platform_data: String,
-) -> Result<(String, Option<String>), Box<dyn Error>> {
+fn parse_platform_data(mut platform_data: String) -> Result<(String, Option<String>), Error> {
     platform_data = format!("{} ", platform_data);
     let data = platform_data.split("' ").filter(|&s| !s.is_empty()).fold(
         FxHashMap::default(),
@@ -268,7 +265,7 @@ fn parse_platform_data(
     // There should always be a G entry.
     let code = data
         .get("G")
-        .ok_or("Entry of type \"G\" missing.")?
+        .ok_or_eyre("Entry of type \"G\" missing.")?
         .to_string();
     let sectors = data.get("A").map(|s| s.to_string());
 

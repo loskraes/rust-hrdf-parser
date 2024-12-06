@@ -1,17 +1,16 @@
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
-use std::error::Error;
-
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{InformationText, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Error> {
     log::info!("Parsing INFOTEXT_DE...");
     log::info!("Parsing INFOTEXT_EN...");
     log::info!("Parsing INFOTEXT_FR...");
@@ -44,7 +43,7 @@ fn load_content(
     path: &str,
     data: &mut FxHashMap<i32, InformationText>,
     language: Language,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the content in a specific language.
@@ -82,12 +81,12 @@ fn set_content(
     mut values: Vec<ParsedValue>,
     data: &mut FxHashMap<i32, InformationText>,
     language: Language,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let id: i32 = values.remove(0).into();
     let description: String = values.remove(0).into();
 
     data.get_mut(&id)
-        .ok_or("Unknown ID")?
+        .ok_or_eyre("Unknown ID")?
         .set_content(language, &description);
 
     Ok(())

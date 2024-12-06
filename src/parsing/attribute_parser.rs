@@ -4,11 +4,12 @@
 // ---
 // Files not used by the parser:
 // ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{Attribute, Language, Model},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
@@ -20,7 +21,7 @@ use crate::{
 
 type AttributeAndTypeConverter = (ResourceStorage<Attribute>, FxHashMap<String, i32>);
 
-pub fn parse(path: &str) -> Result<AttributeAndTypeConverter, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<AttributeAndTypeConverter, Error> {
     log::info!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -107,15 +108,15 @@ fn set_description(
     pk_type_converter: &FxHashMap<String, i32>,
     data: &mut FxHashMap<i32, Attribute>,
     language: Language,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let legacy_id: String = values.remove(0).into();
     let description: String = values.remove(0).into();
 
     let id = pk_type_converter
         .get(&legacy_id)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
     data.get_mut(id)
-        .ok_or("Unknown ID")?
+        .ok_or_eyre("Unknown ID")?
         .set_description(language, &description);
 
     Ok(())
@@ -128,7 +129,7 @@ fn set_description(
 fn update_current_language(
     mut values: Vec<ParsedValue>,
     current_language: &mut Language,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let language: String = values.remove(0).into();
     let language = &language[1..&language.len() - 1];
 

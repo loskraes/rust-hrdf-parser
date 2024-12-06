@@ -1,11 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // METABHF
-use std::error::Error;
-
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{Model, StopConnection},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
@@ -18,7 +17,7 @@ use crate::{
 pub fn parse(
     path: &str,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<ResourceStorage<StopConnection>, Box<dyn Error>> {
+) -> Result<ResourceStorage<StopConnection>, Error> {
     log::info!("Parsing METABHF...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -49,7 +48,7 @@ pub fn parse(
         match id {
             ROW_A => data.push(create_instance(values, &auto_increment)),
             _ => {
-                let stop_connection = data.last_mut().ok_or("Type A row missing.")?;
+                let stop_connection = data.last_mut().ok_or_eyre("Type A row missing.")?;
 
                 match id {
                     ROW_B => set_attribute(values, stop_connection, attributes_pk_type_converter)?,
@@ -81,11 +80,11 @@ fn set_attribute(
     mut values: Vec<ParsedValue>,
     current_instance: &mut StopConnection,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), Error> {
     let attribute_designation: String = values.remove(0).into();
     let attribute_id = *attributes_pk_type_converter
         .get(&attribute_designation)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or_eyre("Unknown legacy ID")?;
     current_instance.set_attribute(attribute_id);
     Ok(())
 }

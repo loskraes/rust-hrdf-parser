@@ -1,19 +1,20 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use chrono::NaiveDate;
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{Holiday, Language, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Error> {
     log::info!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -43,7 +44,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Box<dyn Error>> {
 fn create_instance(
     mut values: Vec<ParsedValue>,
     auto_increment: &AutoIncrement,
-) -> Result<Holiday, Box<dyn Error>> {
+) -> Result<Holiday, Error> {
     let date: String = values.remove(0).into();
     let name_translations: String = values.remove(0).into();
 
@@ -59,15 +60,15 @@ fn create_instance(
 
 fn parse_name_translations(
     name_translations: String,
-) -> Result<FxHashMap<Language, String>, Box<dyn Error>> {
+) -> Result<FxHashMap<Language, String>, Error> {
     name_translations
         .split('>')
         .filter(|&s| !s.is_empty())
-        .map(|s| -> Result<(Language, String), Box<dyn Error>> {
+        .map(|s| -> Result<(Language, String), Error> {
             let mut parts = s.split('<');
 
-            let v = parts.next().ok_or("Missing value part")?.to_string();
-            let k = parts.next().ok_or("Missing value part")?.to_string();
+            let v = parts.next().ok_or_eyre("Missing value part")?.to_string();
+            let k = parts.next().ok_or_eyre("Missing value part")?.to_string();
             let k = Language::from_str(&k)?;
 
             Ok((k, v))

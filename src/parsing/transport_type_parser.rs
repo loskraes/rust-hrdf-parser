@@ -1,11 +1,10 @@
 // 1 file(s).
 // File(s) read by the parser:
 // ZUGART
-use std::error::Error;
-
 use rustc_hash::FxHashMap;
 
 use crate::{
+    error::{Error, OptionExt},
     models::{Language, Model, TransportType},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
@@ -17,7 +16,7 @@ use crate::{
 
 type TransportTypeAndTypeConverter = (ResourceStorage<TransportType>, FxHashMap<String, i32>);
 
-pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Error> {
     log::info!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -77,7 +76,7 @@ pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Box<dyn Error>
                 data.push(transport_type);
             }
             _ => {
-                let transport_type = data.last_mut().ok_or("Type A row missing.")?;
+                let transport_type = data.last_mut().ok_or_eyre("Type A row missing.")?;
 
                 match id {
                     ROW_B => update_current_language(values, &mut current_language),

@@ -1,15 +1,14 @@
 // 1 file(s).
 // File(s) read by the parser:
 // BITFELD
-use std::error::Error;
-
 use crate::{
+    error::{Error, OptionExt},
     models::{BitField, Model},
     parsing::{ColumnDefinition, ExpectedType, FileParser, ParsedValue, RowDefinition, RowParser},
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
+pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Error> {
     log::info!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -34,7 +33,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Box<dyn Error>> {
 // --- Data Processing Functions
 // ------------------------------------------------------------------------------------------------
 
-fn create_instance(mut values: Vec<ParsedValue>) -> Result<BitField, Box<dyn Error>> {
+fn create_instance(mut values: Vec<ParsedValue>) -> Result<BitField, Error> {
     let id: i32 = values.remove(0).into();
     let hex_number: String = values.remove(0).into();
 
@@ -48,13 +47,13 @@ fn create_instance(mut values: Vec<ParsedValue>) -> Result<BitField, Box<dyn Err
 // ------------------------------------------------------------------------------------------------
 
 /// Converts a hexadecimal number into a list of where each item represents a bit.
-fn convert_hex_number_to_bits(hex_number: String) -> Result<Vec<u8>, Box<dyn Error>> {
+fn convert_hex_number_to_bits(hex_number: String) -> Result<Vec<u8>, Error> {
     let result = hex_number
         .chars()
         .map(|hex_digit| {
             hex_digit
                 .to_digit(16)
-                .ok_or("Invalid hexadecimal digit")
+                .ok_or_eyre("Invalid hexadecimal digit")
                 .map(|val| (0..4).rev().map(move |i| ((val >> i) & 1) as u8))
         })
         .collect::<Result<Vec<_>, _>>()?

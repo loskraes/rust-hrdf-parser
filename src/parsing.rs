@@ -35,12 +35,13 @@ pub use transport_company_parser::parse as load_transport_companies;
 pub use transport_type_parser::parse as load_transport_types;
 
 use std::{
-    error::Error,
     fs::File,
     io::{self, Read, Seek},
 };
 
 use regex::Regex;
+
+use crate::error::{Error, OptionExt};
 
 pub enum ExpectedType {
     Float,
@@ -161,7 +162,7 @@ pub struct AdvancedRowMatcher {
 }
 
 impl AdvancedRowMatcher {
-    pub fn new(re: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(re: &str) -> Result<Self, Error> {
         Ok(Self {
             re: Regex::new(re)?,
         })
@@ -248,7 +249,7 @@ impl RowParser {
         Self { row_definitions }
     }
 
-    fn parse(&self, row: &str) -> Result<ParsedRow, Box<dyn Error>> {
+    fn parse(&self, row: &str) -> Result<ParsedRow, Error> {
         let row_definition = self.row_definition(row)?;
         // 2 bytes for \r\n
         let bytes_read = row.len() as u64 + 2;
@@ -268,7 +269,7 @@ impl RowParser {
                     .char_indices()
                     .map(|(i, _)| i)
                     .nth(start)
-                    .ok_or("The start column is out of range.")?;
+                    .ok_or_eyre("The start column is out of range.")?;
                 let stop = if let Some(i) = row.char_indices().map(|(i, _)| i).nth(stop) {
                     i
                 } else {
@@ -287,13 +288,13 @@ impl RowParser {
                         ParsedValue::OptionInteger32(value.parse().ok())
                     }
                 };
-                Ok::<ParsedValue, Box<dyn Error>>(result)
+                Ok::<ParsedValue, Error>(result)
             })
-            .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
+            .collect::<Result<Vec<_>, Error>>()?;
         Ok((row_definition.id, bytes_read, values))
     }
 
-    fn row_definition(&self, row: &str) -> Result<&RowDefinition, Box<dyn Error>> {
+    fn row_definition(&self, row: &str) -> Result<&RowDefinition, Error> {
         if self.row_definitions.len() == 1 {
             return Ok(&self.row_definitions[0]);
         }
@@ -304,7 +305,7 @@ impl RowParser {
             // unwrap: "row_matcher" is guaranteed to always have a value when there are multiple row definitions.
             .find(|row_definition| row_definition.row_matcher.as_ref().unwrap().match_row(row));
 
-        matched_row_definition.ok_or(format!("This type of row is unknown:\n{}", row).into())
+        matched_row_definition.ok_or_eyre(format!("This type of row is unknown:\n{}", row))
     }
 }
 
@@ -359,7 +360,7 @@ pub struct ParsedRowIterator<'a> {
 }
 
 impl Iterator for ParsedRowIterator<'_> {
-    type Item = Result<ParsedRow, Box<dyn Error>>;
+    type Item = Result<ParsedRow, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.rows_iter
