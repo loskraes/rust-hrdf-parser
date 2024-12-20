@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // METABHF
@@ -15,7 +17,7 @@ use crate::{
 };
 
 pub fn parse(
-    path: &str,
+    path: &Path,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<ResourceStorage<StopConnection>, Error> {
     log::info!("Parsing METABHF...");
@@ -38,7 +40,7 @@ pub fn parse(
         // This row is ignored.
         RowDefinition::new(ROW_C, Box::new(FastRowMatcher::new(8, 1, ":", true)), Vec::new()),
     ]);
-    let parser = FileParser::new(&format!("{path}/METABHF"), row_parser)?;
+    let parser = FileParser::new(&path.join("METABHF"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();

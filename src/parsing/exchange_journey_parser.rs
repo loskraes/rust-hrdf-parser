@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGZ
@@ -12,7 +14,7 @@ use crate::{
 };
 
 pub fn parse(
-    path: &str,
+    path: &Path,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<ResourceStorage<ExchangeTimeJourney>, Error> {
     log::info!("Parsing UMSTEIGZ...");
@@ -30,7 +32,7 @@ pub fn parse(
             ColumnDefinition::new(42, 47, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/UMSTEIGZ"), row_parser)?;
+    let parser = FileParser::new(&path.join("UMSTEIGZ"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

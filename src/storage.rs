@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use chrono::{Days, NaiveDate};
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Serialize};
@@ -62,7 +64,7 @@ pub struct DataStorage {
 
 #[allow(unused)]
 impl DataStorage {
-    pub fn new(version: Version, path: &str) -> Result<Self, Error> {
+    pub fn new(version: Version, path: &Path) -> Result<Self, Error> {
         // Time-relevant data
         let bit_fields = parsing::load_bit_fields(path)?;
         let holidays = parsing::load_holidays(path)?;

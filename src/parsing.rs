@@ -37,6 +37,7 @@ pub use transport_type_parser::parse as load_transport_types;
 use std::{
     fs::File,
     io::{self, Read, Seek},
+    path::Path,
 };
 
 use regex::Regex;
@@ -319,12 +320,12 @@ pub struct FileParser {
 }
 
 impl FileParser {
-    pub fn new(path: &str, row_parser: RowParser) -> io::Result<Self> {
+    pub fn new(path: &Path, row_parser: RowParser) -> io::Result<Self> {
         Self::new_with_bytes_offset(path, row_parser, 0)
     }
 
     pub fn new_with_bytes_offset(
-        path: &str,
+        path: &Path,
         row_parser: RowParser,
         bytes_offset: u64,
     ) -> io::Result<Self> {
@@ -332,7 +333,7 @@ impl FileParser {
         Ok(Self { rows, row_parser })
     }
 
-    fn read_lines(path: &str, bytes_offset: u64) -> io::Result<Vec<String>> {
+    fn read_lines(path: &Path, bytes_offset: u64) -> io::Result<Vec<String>> {
         let mut file = File::open(path)?;
         file.seek(io::SeekFrom::Start(bytes_offset))?;
         let mut reader = io::BufReader::new(file);

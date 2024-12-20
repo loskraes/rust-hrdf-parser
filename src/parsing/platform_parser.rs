@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 3 file(s).
 // File(s) read by the parser:
 // GLEIS, GLEIS_LV95, GLEIS_WGS
@@ -17,7 +19,7 @@ use crate::{
 };
 
 pub fn parse(
-    path: &str,
+    path: &Path,
     journeys_pk_type_converter: &FxHashMap<(i32, String), i32>,
 ) -> Result<(ResourceStorage<JourneyPlatform>, ResourceStorage<Platform>), Error> {
     log::info!("Parsing GLEIS...");
@@ -42,7 +44,7 @@ pub fn parse(
             ColumnDefinition::new(18, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/GLEIS"), row_parser)?;
+    let parser = FileParser::new(&path.join("GLEIS"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut platforms = Vec::new();
@@ -97,7 +99,7 @@ pub fn parse(
 }
 
 fn load_coordinates_for_platforms(
-    path: &str,
+    path: &Path,
     coordinate_system: CoordinateSystem,
     bytes_offset: u64,
     pk_type_converter: &FxHashMap<(i32, i32), i32>,
@@ -129,8 +131,7 @@ fn load_coordinates_for_platforms(
         CoordinateSystem::LV95 => "GLEIS_LV95",
         CoordinateSystem::WGS84 => "GLEIS_WGS",
     };
-    let parser =
-        FileParser::new_with_bytes_offset(&format!("{path}/{filename}"), row_parser, bytes_offset)?;
+    let parser = FileParser::new_with_bytes_offset(&path.join(filename), row_parser, bytes_offset)?;
 
     parser.parse().try_for_each(|x| {
         let (id, _, values) = x?;

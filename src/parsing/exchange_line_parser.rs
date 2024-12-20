@@ -1,7 +1,7 @@
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGL
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use rustc_hash::FxHashMap;
 
@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub fn parse(
-    path: &str,
+    path: &Path,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
 ) -> Result<ResourceStorage<ExchangeTimeLine>, Error> {
     log::info!("Parsing UMSTEIGL...");
@@ -35,7 +35,7 @@ pub fn parse(
             ColumnDefinition::new(56, 56, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/UMSTEIGL"), row_parser)?;
+    let parser = FileParser::new(&path.join("UMSTEIGL"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

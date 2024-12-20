@@ -4,7 +4,7 @@
 // ---
 // Files not used by the parser:
 // ATTRIBUT_DE, ATTRIBUT_EN, ATTRIBUT_FR, ATTRIBUT_IT
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use rustc_hash::FxHashMap;
 
@@ -21,7 +21,7 @@ use crate::{
 
 type AttributeAndTypeConverter = (ResourceStorage<Attribute>, FxHashMap<String, i32>);
 
-pub fn parse(path: &str) -> Result<AttributeAndTypeConverter, Error> {
+pub fn parse(path: &Path) -> Result<AttributeAndTypeConverter, Error> {
     log::info!("Parsing ATTRIBUT...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -52,7 +52,7 @@ pub fn parse(path: &str) -> Result<AttributeAndTypeConverter, Error> {
         ]),
     ]);
     // The ATTRIBUT file is used instead of ATTRIBUT_* for simplicity's sake.
-    let parser = FileParser::new(&format!("{path}/ATTRIBUT"), row_parser)?;
+    let parser = FileParser::new(&path.join("ATTRIBUT"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = FxHashMap::default();

@@ -4,7 +4,7 @@
 // ---
 // Files not used by the parser:
 // BHFART
-use std::vec;
+use std::{path::Path, vec};
 
 use rustc_hash::FxHashMap;
 
@@ -20,7 +20,7 @@ use crate::{
 
 type StopStorageAndExchangeTimes = (ResourceStorage<Stop>, (i16, i16));
 
-pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes, Error> {
+pub fn parse(version: Version, path: &Path) -> Result<StopStorageAndExchangeTimes, Error> {
     log::info!("Parsing BAHNHOF...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -30,7 +30,7 @@ pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes
             ColumnDefinition::new(13, -1, ExpectedType::String), // Should be 13-62, but some entries go beyond column 62.
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/BAHNHOF"), row_parser)?;
+    let parser = FileParser::new(&path.join("BAHNHOF"), row_parser)?;
 
     let data = parser
         .parse()
@@ -56,7 +56,7 @@ pub fn parse(version: Version, path: &str) -> Result<StopStorageAndExchangeTimes
 
 fn load_coordinates(
     version: Version,
-    path: &str,
+    path: &Path,
     coordinate_system: CoordinateSystem,
     data: &mut FxHashMap<i32, Stop>,
 ) -> Result<(), Error> {
@@ -84,7 +84,7 @@ fn load_coordinates(
         CoordinateSystem::LV95 => "BFKOORD_LV95",
         CoordinateSystem::WGS84 => "BFKOORD_WGS",
     };
-    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
+    let parser = FileParser::new(&path.join(filename), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (_, _, values) = x?;
@@ -93,7 +93,7 @@ fn load_coordinates(
     })
 }
 
-fn load_exchange_priorities(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
+fn load_exchange_priorities(path: &Path, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing priority.
@@ -102,7 +102,7 @@ fn load_exchange_priorities(path: &str, data: &mut FxHashMap<i32, Stop>) -> Resu
             ColumnDefinition::new(9, 10, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/BFPRIOS"), row_parser)?;
+    let parser = FileParser::new(&path.join("BFPRIOS"), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (_, _, values) = x?;
@@ -111,7 +111,7 @@ fn load_exchange_priorities(path: &str, data: &mut FxHashMap<i32, Stop>) -> Resu
     })
 }
 
-fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
+fn load_exchange_flags(path: &Path, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing flag.
@@ -120,7 +120,7 @@ fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
             ColumnDefinition::new(9, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/KMINFO"), row_parser)?;
+    let parser = FileParser::new(&path.join("KMINFO"), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (_, _, values) = x?;
@@ -129,7 +129,7 @@ fn load_exchange_flags(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<()
     })
 }
 
-fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(i16, i16), Error> {
+fn load_exchange_times(path: &Path, data: &mut FxHashMap<i32, Stop>) -> Result<(i16, i16), Error> {
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
         // This row contains the changing time.
@@ -139,7 +139,7 @@ fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(i
             ColumnDefinition::new(12, 13, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/UMSTEIGB"), row_parser)?;
+    let parser = FileParser::new(&path.join("UMSTEIGB"), row_parser)?;
 
     let mut default_exchange_time = (0, 0);
 
@@ -154,7 +154,7 @@ fn load_exchange_times(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(i
     Ok(default_exchange_time)
 }
 
-fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
+fn load_descriptions(path: &Path, data: &mut FxHashMap<i32, Stop>) -> Result<(), Error> {
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
     const ROW_C: i32 = 3;
@@ -180,7 +180,7 @@ fn load_descriptions(path: &str, data: &mut FxHashMap<i32, Stop>) -> Result<(), 
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/BHFART_60"), row_parser)?;
+    let parser = FileParser::new(&path.join("BHFART_60"), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (id, _, values) = x?;

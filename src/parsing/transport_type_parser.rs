@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // ZUGART
@@ -16,7 +18,7 @@ use crate::{
 
 type TransportTypeAndTypeConverter = (ResourceStorage<TransportType>, FxHashMap<String, i32>);
 
-pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Error> {
+pub fn parse(path: &Path) -> Result<TransportTypeAndTypeConverter, Error> {
     log::info!("Parsing ZUGART...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -59,7 +61,7 @@ pub fn parse(path: &str) -> Result<TransportTypeAndTypeConverter, Error> {
             ColumnDefinition::new(14, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/ZUGART"), row_parser)?;
+    let parser = FileParser::new(&path.join("ZUGART"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();

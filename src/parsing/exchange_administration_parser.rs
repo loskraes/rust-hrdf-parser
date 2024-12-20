@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // UMSTEIGV
@@ -9,7 +11,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<ExchangeTimeAdministration>, Error> {
     log::info!("Parsing UMSTEIGV...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -21,7 +23,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<ExchangeTimeAdministration>, 
             ColumnDefinition::new(23, 24, ExpectedType::Integer16),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/UMSTEIGV"), row_parser)?;
+    let parser = FileParser::new(&path.join("UMSTEIGV"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

@@ -1,7 +1,8 @@
 use std::{
+    env,
     fs::{self, File},
     io::{BufReader, Cursor},
-    path::Path,
+    path::{Path, PathBuf},
     time::Instant,
 };
 
@@ -48,11 +49,12 @@ impl Hrdf {
             // The cache must be built.
             // If cache loading has failed, the cache must be rebuilt.
             let compressed_data_path = if Url::parse(url_or_path).is_ok() {
-                let compressed_data_path = format!("/tmp/{unique_filename}.zip");
+                let compressed_data_path =
+                    env::temp_dir().join(&unique_filename).with_extension("zip");
 
-                if !Path::new(&compressed_data_path).exists() {
+                if !compressed_data_path.exists() {
                     // The data must be downloaded.
-                    log::info!("Downloading HRDF data to {compressed_data_path}...");
+                    log::info!("Downloading HRDF data to {compressed_data_path:?}...");
                     let response = reqwest::get(url_or_path).await?;
                     let mut file = std::fs::File::create(&compressed_data_path)?;
                     let mut content = Cursor::new(response.bytes().await?);
@@ -61,20 +63,20 @@ impl Hrdf {
 
                 compressed_data_path
             } else {
-                url_or_path.to_string()
+                PathBuf::from(url_or_path)
             };
 
-            let decompressed_data_path = format!("/tmp/{unique_filename}");
+            let decompressed_data_path = env::temp_dir().join(unique_filename);
 
-            if !Path::new(&decompressed_data_path).exists() {
+            if !decompressed_data_path.exists() {
                 // The data must be decompressed.
-                log::info!("Unzipping HRDF archive into {decompressed_data_path}...");
+                log::info!("Unzipping HRDF archive into {decompressed_data_path:?}...");
                 let file = File::open(&compressed_data_path)?;
                 let mut archive = ZipArchive::new(BufReader::new(file))?;
                 archive.extract(&decompressed_data_path)?;
             }
 
-            log::info!("Parsing HRDF data from {decompressed_data_path}...");
+            log::info!("Parsing HRDF data from {decompressed_data_path:?}...");
 
             let hrdf = Self {
                 data_storage: DataStorage::new(version, &decompressed_data_path)?,

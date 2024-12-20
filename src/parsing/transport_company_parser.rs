@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 4 file(s).
 // File(s) read by the parser:
 // BETRIEB_DE, BETRIEB_EN, BETRIEB_FR, BETRIEB_IT
@@ -14,7 +16,7 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<TransportCompany>, Error> {
     log::info!("Parsing BETRIEB_DE...");
     log::info!("Parsing BETRIEB_EN...");
     log::info!("Parsing BETRIEB_FR...");
@@ -32,7 +34,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Error> {
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/BETRIEB_DE"), row_parser)?;
+    let parser = FileParser::new(&path.join("BETRIEB_DE"), row_parser)?;
 
     let data = parser
         .parse()
@@ -60,7 +62,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TransportCompany>, Error> {
 }
 
 fn load_designations(
-    path: &str,
+    path: &Path,
     data: &mut FxHashMap<i32, TransportCompany>,
     language: Language,
 ) -> Result<(), Error> {
@@ -83,7 +85,7 @@ fn load_designations(
         Language::French => "BETRIEB_FR",
         Language::Italian => "BETRIEB_IT",
     };
-    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
+    let parser = FileParser::new(&path.join(filename), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (id, _, values) = x?;

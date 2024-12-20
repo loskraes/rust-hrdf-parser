@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // LINIE
@@ -11,7 +13,7 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<Line>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<Line>, Error> {
     log::info!("Parsing LINIE...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -47,7 +49,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Line>, Error> {
             ColumnDefinition::new(13, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/LINIE"), row_parser)?;
+    let parser = FileParser::new(&path.join("LINIE"), row_parser)?;
 
     let mut data = Vec::new();
 

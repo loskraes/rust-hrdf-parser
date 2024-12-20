@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // ECKDATEN
@@ -14,7 +16,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<TimetableMetadataEntry>, Error> {
     log::info!("Parsing ECKDATEN...");
     const ROW_A: i32 = 1;
     const ROW_B: i32 = 2;
@@ -30,7 +32,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>, Erro
             ColumnDefinition::new(1, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/ECKDATEN"), row_parser)?;
+    let parser = FileParser::new(&path.join("ECKDATEN"), row_parser)?;
 
     let mut data: Vec<ParsedValue> = parser
         .parse()

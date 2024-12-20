@@ -1,7 +1,7 @@
 // 1 file(s).
 // File(s) read by the parser:
 // FEIERTAG
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use chrono::NaiveDate;
 use rustc_hash::FxHashMap;
@@ -14,7 +14,7 @@ use crate::{
     utils::AutoIncrement,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<Holiday>, Error> {
     log::info!("Parsing FEIERTAG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -24,7 +24,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<Holiday>, Error> {
             ColumnDefinition::new(12, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/FEIERTAG"), row_parser)?;
+    let parser = FileParser::new(&path.join("FEIERTAG"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
 

@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 4 file(s).
 // File(s) read by the parser:
 // INFOTEXT_DE, INFOTEXT_EN, INFOTEXT_FR, INFOTEXT_IT
@@ -10,7 +12,7 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<InformationText>, Error> {
     log::info!("Parsing INFOTEXT_DE...");
     log::info!("Parsing INFOTEXT_EN...");
     log::info!("Parsing INFOTEXT_FR...");
@@ -23,7 +25,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Error> {
             ColumnDefinition::new(1, 9, ExpectedType::Integer32),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/INFOTEXT_DE"), row_parser)?;
+    let parser = FileParser::new(&path.join("INFOTEXT_DE"), row_parser)?;
 
     let data = parser
         .parse()
@@ -40,7 +42,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<InformationText>, Error> {
 }
 
 fn load_content(
-    path: &str,
+    path: &Path,
     data: &mut FxHashMap<i32, InformationText>,
     language: Language,
 ) -> Result<(), Error> {
@@ -58,7 +60,7 @@ fn load_content(
         Language::French => "INFOTEXT_FR",
         Language::Italian => "INFOTEXT_IT",
     };
-    let parser = FileParser::new(&format!("{path}/{filename}"), row_parser)?;
+    let parser = FileParser::new(&path.join(filename), row_parser)?;
 
     parser.parse().try_for_each(|x| {
         let (_, _, values) = x?;

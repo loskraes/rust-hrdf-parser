@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // RICHTUNG
@@ -12,7 +14,7 @@ use crate::{
 
 type DirectionAndTypeConverter = (ResourceStorage<Direction>, FxHashMap<String, i32>);
 
-pub fn parse(path: &str) -> Result<DirectionAndTypeConverter, Error> {
+pub fn parse(path: &Path) -> Result<DirectionAndTypeConverter, Error> {
     log::info!("Parsing RICHTUNG...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -22,7 +24,7 @@ pub fn parse(path: &str) -> Result<DirectionAndTypeConverter, Error> {
             ColumnDefinition::new(9, -1, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/RICHTUNG"), row_parser)?;
+    let parser = FileParser::new(&path.join("RICHTUNG"), row_parser)?;
 
     let mut pk_type_converter = FxHashMap::default();
 

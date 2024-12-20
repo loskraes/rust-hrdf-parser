@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // BITFELD
@@ -8,7 +10,7 @@ use crate::{
     storage::ResourceStorage,
 };
 
-pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Error> {
+pub fn parse(path: &Path) -> Result<ResourceStorage<BitField>, Error> {
     log::info!("Parsing BITFELD...");
     #[rustfmt::skip]
     let row_parser = RowParser::new(vec![
@@ -18,7 +20,7 @@ pub fn parse(path: &str) -> Result<ResourceStorage<BitField>, Error> {
             ColumnDefinition::new(8, 103, ExpectedType::String),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/BITFELD"), row_parser)?;
+    let parser = FileParser::new(&path.join("BITFELD"), row_parser)?;
 
     let data = parser
         .parse()

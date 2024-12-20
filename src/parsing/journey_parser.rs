@@ -1,3 +1,5 @@
+use std::path::Path;
+
 // 1 file(s).
 // File(s) read by the parser:
 // FPLAN
@@ -18,7 +20,7 @@ use crate::{
 type JourneyAndTypeConverter = (ResourceStorage<Journey>, FxHashMap<(i32, String), i32>);
 
 pub fn parse(
-    path: &str,
+    path: &Path,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
@@ -100,7 +102,7 @@ pub fn parse(
             ColumnDefinition::new(37, 42, ExpectedType::OptionInteger32),
         ]),
     ]);
-    let parser = FileParser::new(&format!("{path}/FPLAN"), row_parser)?;
+    let parser = FileParser::new(&path.join("FPLAN"), row_parser)?;
 
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
