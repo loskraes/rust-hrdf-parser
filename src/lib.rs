@@ -1,10 +1,13 @@
 #![doc = include_str!("../README.md")]
+mod error;
 mod hrdf;
 mod models;
 mod parsing;
 mod storage;
 mod utils;
 
+pub use error::Error;
+pub use error::Result;
 pub use hrdf::Hrdf;
 pub use models::*;
 pub use storage::DataStorage;

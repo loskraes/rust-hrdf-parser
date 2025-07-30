@@ -207,13 +207,12 @@
 /// 1 file(s).
 /// File(s) read by the parser:
 /// FPLAN
-use std::error::Error;
-
 use chrono::NaiveTime;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
-    JourneyId,
+    JourneyId, Result,
+    error::ErrorKind,
     models::{Journey, JourneyMetadataEntry, JourneyMetadataType, JourneyRouteEntry, Model},
     parsing::{
         ColumnDefinition, ExpectedType, FastRowMatcher, FileParser, ParsedValue, RowDefinition,
@@ -350,7 +349,7 @@ fn journey_row_converter(
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(FxHashMap<i32, Journey>, FxHashSet<JourneyId>), Box<dyn Error>> {
+) -> Result<(FxHashMap<i32, Journey>, FxHashSet<JourneyId>)> {
     let auto_increment = AutoIncrement::new();
     let mut data = Vec::new();
     let mut pk_type_converter = FxHashSet::default();
@@ -364,7 +363,7 @@ fn journey_row_converter(
                 &mut pk_type_converter,
             ));
         } else {
-            let journey = data.last_mut().ok_or("Type A row missing.")?;
+            let journey = data.last_mut().ok_or(ErrorKind::RowMissing { typ: "A" })?;
 
             if id == RowType::RowB as i32 {
                 set_transport_type(values, journey, transport_types_pk_type_converter)?;
@@ -398,7 +397,7 @@ pub fn parse(
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<JourneyAndTypeConverter, Box<dyn Error>> {
+) -> Result<JourneyAndTypeConverter> {
     log::info!("Parsing FPLAN...");
     let row_parser = journey_row_parser();
     let parser = FileParser::new(&format!("{path}/FPLAN"), row_parser)?;
@@ -450,11 +449,11 @@ fn set_transport_type(
     values: Vec<ParsedValue>,
     journey: &mut Journey,
     transport_types_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let (designation, from_stop_id, until_stop_id) = row_b_from_parsed_values(values);
     let transport_type_id = *transport_types_pk_type_converter
         .get(&designation)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or(ErrorKind::UnknownLegacyId)?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::TransportType,
@@ -514,12 +513,12 @@ fn add_attribute(
     values: Vec<ParsedValue>,
     journey: &mut Journey,
     attributes_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let (designation, from_stop_id, until_stop_id) = row_d_from_parsed_values(values);
 
     let attribute_id = *attributes_pk_type_converter
         .get(&designation)
-        .ok_or("Unknown legacy ID")?;
+        .ok_or(ErrorKind::UnknownLegacyId)?;
 
     journey.add_metadata_entry(
         JourneyMetadataType::Attribute,
@@ -617,7 +616,7 @@ fn row_f_from_parsed_values(
     )
 }
 
-fn set_line(values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), Box<dyn Error>> {
+fn set_line(values: Vec<ParsedValue>, journey: &mut Journey) -> Result<()> {
     let (line_designation, from_stop_id, until_stop_id, departure_time, arrival_time) =
         row_f_from_parsed_values(values);
     let arrival_time = create_time(arrival_time);
@@ -626,7 +625,7 @@ fn set_line(values: Vec<ParsedValue>, journey: &mut Journey) -> Result<(), Box<d
     let line_designation_first_char = line_designation
         .chars()
         .next()
-        .ok_or("Missing designation")?;
+        .ok_or(ErrorKind::MissingDesignation)?;
     let (resource_id, extra_field_1) = if line_designation_first_char == '#' {
         (Some(line_designation[1..].parse::<i32>()?), None)
     } else {
@@ -683,7 +682,7 @@ fn set_direction(
     values: Vec<ParsedValue>,
     journey: &mut Journey,
     directions_pk_type_converter: &FxHashMap<String, i32>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let (direction_type, direction_id, from_stop_id, until_stop_id, departure_time, arrival_time) =
         row_g_from_parsed_values(values);
     let arrival_time = create_time(arrival_time);
@@ -694,7 +693,7 @@ fn set_direction(
     } else {
         let id = *directions_pk_type_converter
             .get(&direction_id)
-            .ok_or("Unknown legacy ID")?;
+            .ok_or(ErrorKind::UnknownLegacyId)?;
         Some(id)
     };
 
