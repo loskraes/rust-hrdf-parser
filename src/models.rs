@@ -1185,34 +1185,78 @@ impl ThroughService {
 // --- TimetableMetadataEntry
 // ------------------------------------------------------------------------------------------------
 
+#[derive(Debug, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum TimetableMetadataKey {
+    StartDate,
+    EndDate,
+    Name,
+    CreatedAt,
+    Version,
+    Provider,
+}
+impl TimetableMetadataKey {
+    fn as_str(&self) -> &str {
+        match self {
+            TimetableMetadataKey::StartDate => "start_date",
+            TimetableMetadataKey::EndDate => "end_date",
+            TimetableMetadataKey::Name => "name",
+            TimetableMetadataKey::CreatedAt => "created_at",
+            TimetableMetadataKey::Version => "version",
+            TimetableMetadataKey::Provider => "provider",
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TimetableMetadataEntry {
-    id: i32,
-    key: String,
-    value: String,
+pub enum TimetableMetadataValue {
+    String(String),
+    NaiveDate(NaiveDate),
+    NaiveDateTime(NaiveDateTime),
+}
+impl TimetableMetadataValue {
+    pub fn naive_date(&self) -> Option<NaiveDate> {
+        match self {
+            Self::String(_) => None,
+            Self::NaiveDate(date) => Some(*date),
+            Self::NaiveDateTime(datetime) => Some(datetime.date()),
+        }
+    }
 }
 
-impl_Model!(TimetableMetadataEntry);
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TimetableMetadataEntry {
+    id: TimetableMetadataKey,
+    value: TimetableMetadataValue,
+}
+
+//impl_Model!(TimetableMetadataEntry);
+impl Model<TimetableMetadataEntry> for TimetableMetadataEntry {
+    type K = TimetableMetadataKey;
+
+    fn id(&self) -> Self::K {
+        self.id
+    }
+}
 
 impl TimetableMetadataEntry {
-    pub fn new(id: i32, key: String, value: String) -> Self {
-        Self { id, key, value }
+    pub fn new(id: TimetableMetadataKey, value: TimetableMetadataValue) -> Self {
+        Self { id, value }
     }
 
     // Getters/Setters
 
+    #[deprecated]
     pub fn key(&self) -> &str {
-        &self.key
+        self.id.as_str()
     }
 
-    pub fn value(&self) -> &str {
+    pub fn value(&self) -> &TimetableMetadataValue {
         &self.value
     }
 
-    /// unwrap: Do not call this function if the value is not a date.
     #[allow(non_snake_case)]
-    pub fn value_as_NaiveDate(&self) -> NaiveDate {
-        NaiveDate::parse_from_str(self.value(), "%Y-%m-%d").unwrap()
+    pub fn value_as_NaiveDate(&self) -> Option<NaiveDate> {
+        self.value().naive_date()
     }
 }
 

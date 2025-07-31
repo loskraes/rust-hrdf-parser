@@ -2,17 +2,16 @@
 // File(s) read by the parser:
 // ECKDATEN
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
 
 use crate::{
-    Result,
+    Result, TimetableMetadataKey, TimetableMetadataValue,
     models::{Model, TimetableMetadataEntry},
     parsing::{
         AdvancedRowMatcher, ColumnDefinition, ExpectedType, FastRowMatcher, FileParser,
         ParsedValue, RowDefinition, RowParser,
     },
     storage::ResourceStorage,
-    utils::AutoIncrement,
 };
 
 pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>> {
@@ -44,24 +43,47 @@ pub fn parse(path: &str) -> Result<ResourceStorage<TimetableMetadataEntry>> {
 
     let start_date = NaiveDate::parse_from_str(&start_date, "%d.%m.%Y")?;
     let end_date = NaiveDate::parse_from_str(&end_date, "%d.%m.%Y")?;
-    let other_data: Vec<String> = other_data.split('$').map(String::from).collect();
+    let mut other_data: Vec<String> = other_data.split('$').map(String::from).collect();
+
+    let name = other_data.remove(0);
+    let created_at = other_data.remove(0);
+    let version = other_data.remove(0);
+    let provider = other_data.remove(0);
+
+    let created_at = NaiveDateTime::parse_from_str(&created_at, "%d.%m.%Y %H:%M:%S")?;
+
+    // TODO: Ensure other_data is empty ? else keep it in an entry
 
     let rows = vec![
-        ("start_date", start_date.to_string()),
-        ("end_date", end_date.to_string()),
-        ("name", other_data[0].to_owned()),
-        ("created_at", other_data[1].to_owned()),
-        ("version", other_data[2].to_owned()),
-        ("provider", other_data[3].to_owned()),
+        (
+            TimetableMetadataKey::StartDate,
+            TimetableMetadataValue::NaiveDate(start_date),
+        ),
+        (
+            TimetableMetadataKey::EndDate,
+            TimetableMetadataValue::NaiveDate(end_date),
+        ),
+        (
+            TimetableMetadataKey::Name,
+            TimetableMetadataValue::String(name),
+        ),
+        (
+            TimetableMetadataKey::CreatedAt,
+            TimetableMetadataValue::NaiveDateTime(created_at),
+        ),
+        (
+            TimetableMetadataKey::Version,
+            TimetableMetadataValue::String(version),
+        ),
+        (
+            TimetableMetadataKey::Provider,
+            TimetableMetadataValue::String(provider),
+        ),
     ];
 
-    let auto_increment = AutoIncrement::new();
-
     let data: Vec<TimetableMetadataEntry> = rows
-        .iter()
-        .map(|(key, value)| {
-            TimetableMetadataEntry::new(auto_increment.next(), key.to_string(), value.to_owned())
-        })
+        .into_iter()
+        .map(|(key, value)| TimetableMetadataEntry::new(key, value))
         .collect();
     let data = TimetableMetadataEntry::vec_to_map(data);
 
